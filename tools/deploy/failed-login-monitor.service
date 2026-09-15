@@ -1,0 +1,59 @@
+# /etc/systemd/system/failed-login-monitor.service
+#
+# The systemd route, for the legacy hosts where the app still writes to local
+# disk and there is no container runtime. Deliberately boring.
+#
+# The properties that matter for an unattended job are all here and are all
+# things a cron entry cannot give you: a hard timeout so a slow run cannot
+# overlap the next one, resource limits so the monitor cannot be the thing that
+# takes the host down, a filesystem sandbox, and structured exit-code handling.
+
+[Unit]
+Description=Failed login monitor
+After=network-online.target
+# Never run two at once. Without this, a slow run on a large file and the next
+# scheduled run compete for the same checkpoint file.
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+User=logmonitor
+Group=adm
+
+Environment=ENVIRONMENT=prod
+ExecStart=/usr/local/bin/log_analyzer.py \
+  --path '/var/log/app/app.log*' \
+  --window 15m \
+  --top 5 \
+  --format emf \
+  --service legacy-app \
+  --checkpoint /var/lib/log-analyzer/state.json \
+  --fail-over 100 \
+  --max-seconds 240
+
+# A run that exceeds its budget is killed rather than left to overlap.
+TimeoutStartSec=300
+
+# Resource ceiling. A monitoring tool must never be the cause of the incident.
+MemoryMax=256M
+CPUQuota=50%
+Nice=10
+IOSchedulingClass=idle
+
+# Sandbox. The job reads logs and writes one state file; nothing else.
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+NoNewPrivileges=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadOnlyPaths=/var/log/app
+ReadWritePaths=/var/lib/log-analyzer
+
+# Exit-code semantics. 2 (threshold) and 3 (drift) are real, actionable
+# failures and should show as failed units so the node exporter picks them up.
+# 4 (no input) is also a failure — that is the entire point of the rewrite.
+SuccessExitStatus=0
+
+[Install]
+WantedBy=multi-user.target

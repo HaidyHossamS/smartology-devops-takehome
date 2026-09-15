@@ -1,0 +1,74 @@
+#!/bin/bash
+# =============================================================================
+# Bootstrap for the log processor fleet.
+#
+# Deliberately thin. Userdata that installs and configures an application is
+# a 4-minute boot, an unpinned dependency tree, and a class of failure that
+# only shows up when you are scaling out during an incident. The real artifact
+# is a golden AMI built by EC2 Image Builder with the agent already baked in;
+# this script only does the machine-specific wiring that cannot be baked.
+# =============================================================================
+set -euo pipefail
+
+exec > >(tee /var/log/bootstrap.log | logger -t bootstrap -s 2>/dev/console) 2>&1
+
+STREAM_NAME="${stream_name}"
+DELIVERY_STREAM="${delivery_stream}"
+APP_NAME="${kcl_app_name}"
+REGION="${region}"
+LOG_GROUP="${log_group}"
+ASG_NAME="${asg_name}"
+
+# IMDSv2 only. Every metadata call is token-authenticated; the plain
+# http://169.254.169.254/latest/meta-data/ GET that SSRF exploits rely on is
+# refused by the instance itself.
+TOKEN=$(curl -sf -X PUT "http://169.254.169.254/latest/api/token" \
+  -H "X-aws-ec2-metadata-token-ttl-seconds: 300")
+INSTANCE_ID=$(curl -sf -H "X-aws-ec2-metadata-token: $TOKEN" \
+  http://169.254.169.254/latest/meta-data/instance-id)
+AZ=$(curl -sf -H "X-aws-ec2-metadata-token: $TOKEN" \
+  http://169.254.169.254/latest/meta-data/placement/availability-zone)
+
+echo "bootstrap: instance=$INSTANCE_ID az=$AZ app=$APP_NAME"
+
+cat > /etc/log-processor/config.env <<EOF
+KINESIS_STREAM_NAME=$STREAM_NAME
+FIREHOSE_DELIVERY_STREAM=$DELIVERY_STREAM
+KCL_APPLICATION_NAME=$APP_NAME
+AWS_REGION=$REGION
+CLOUDWATCH_LOG_GROUP=$LOG_GROUP
+WORKER_ID=$INSTANCE_ID
+EOF
+chmod 0640 /etc/log-processor/config.env
+
+# --- Graceful drain ----------------------------------------------------------
+# Paired with the ASG lifecycle hook. On Spot reclaim or a scale-in, systemd
+# sends SIGTERM, the consumer finishes its in-flight batch, checkpoints to the
+# KCL lease table and exits. Without this, in-flight records are reprocessed
+# from the last checkpoint — correct, but duplicated. With it, the duplicate
+# window is close to zero.
+cat > /etc/systemd/system/log-processor.service.d/drain.conf <<'EOF'
+[Service]
+KillSignal=SIGTERM
+TimeoutStopSec=90
+Restart=always
+RestartSec=5
+EOF
+
+systemctl daemon-reload
+systemctl enable --now log-processor.service
+
+# Report readiness to the ASG only once the consumer is actually consuming.
+# An instance that is "running" but has not yet acquired a shard lease must not
+# count as healthy, or an instance refresh will happily roll the whole fleet
+# while nothing is processing.
+for i in {1..30}; do
+  if curl -sf http://127.0.0.1:8080/health >/dev/null; then
+    echo "bootstrap: healthy after $${i} attempts"
+    exit 0
+  fi
+  sleep 5
+done
+
+echo "bootstrap: health check never passed; failing the instance so the ASG replaces it" >&2
+exit 1

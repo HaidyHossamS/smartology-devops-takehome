@@ -1,0 +1,42 @@
+###############################################################################
+# Copy to terraform.tfvars and fill in. Never commit the real file.
+###############################################################################
+
+region      = "eu-west-1"
+name        = "log-processor"
+environment = "prod"
+owner       = "platform-engineering"
+
+# Networking is owned by the network module/state. Feed its outputs in here.
+vpc_id = "vpc-0123456789abcdef0"
+private_subnet_ids = [
+  "subnet-0aaa111111111111a", # eu-west-1a
+  "subnet-0bbb222222222222b", # eu-west-1b
+  "subnet-0ccc333333333333c", # eu-west-1c
+]
+
+# Ingest
+stream_mode            = "ON_DEMAND"
+stream_retention_hours = 168 # 7-day replay window
+
+# Compute
+instance_types          = ["m7g.large", "m6g.large", "m7gd.large"]
+min_size                = 3
+max_size                = 12
+on_demand_base_capacity = 2
+
+# Durability
+firehose_buffer_mb      = 128
+firehose_buffer_seconds = 300
+archive_after_days      = 90
+expire_after_days       = 2555 # 7 years, set by the retention policy
+enable_object_lock      = true
+
+# Alerting — in a real deployment this is a PagerDuty HTTPS subscription
+# created by the on-call module, not an email address.
+alarm_email = "platform-oncall@smartology.example"
+
+tags = {
+  CostCentre = "CC-4417"
+  Compliance = "pci-dss"
+}

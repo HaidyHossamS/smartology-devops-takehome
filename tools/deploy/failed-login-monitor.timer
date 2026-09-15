@@ -1,0 +1,21 @@
+# /etc/systemd/system/failed-login-monitor.timer
+
+[Unit]
+Description=Run the failed login monitor every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+
+# Jitter. Without it, every host in the fleet runs at exactly :00, :05, :10 and
+# they all hit the same downstream at the same instant. This is the same
+# thundering-herd shape that shows up in Part 3.
+RandomizedDelaySec=45
+
+# If the host was asleep or down, run once on resume rather than trying to
+# catch up on every missed interval.
+Persistent=true
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,97 @@
+# The Kubernetes route, for the services that have already been containerised.
+#
+# Same tool, same exit codes; only the scheduler changes. That portability is
+# why the analyser is stdlib-only with no config file: it has to behave
+# identically on a 2015 VM and in a distroless container.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: failed-login-monitor
+  labels:
+    app.kubernetes.io/name: failed-login-monitor
+    app.kubernetes.io/component: security-monitoring
+spec:
+  schedule: "*/5 * * * *"
+  # Never let a slow run overlap the next one and corrupt the checkpoint.
+  concurrencyPolicy: Forbid
+  # If the cluster was busy, skip rather than stampede.
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 300
+      ttlSecondsAfterFinished: 3600
+
+      template:
+        metadata:
+          annotations:
+            # Prometheus scrapes the textfile output from the sidecar-less
+            # pushgateway path; for a CronJob the usual pattern is EMF to
+            # stdout and a log-based metric filter instead.
+            prometheus.io/scrape: "false"
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            fsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+
+          containers:
+            - name: analyzer
+              image: ghcr.io/smartology/log-analyzer:1.2.0
+              imagePullPolicy: IfNotPresent
+
+              args:
+                - --path=/logs/app.log*
+                - --window=15m
+                - --top=5
+                - --format=emf
+                - --service=legacy-app
+                - --checkpoint=/state/checkpoint.json
+                - --fail-over=100
+                - --max-seconds=240
+
+              env:
+                - name: ENVIRONMENT
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  # Deliberately close to the request. The cardinality guard in
+                  # the analyser exists so that hitting this limit is a reported
+                  # condition rather than an OOMKill with no output.
+                  memory: 256Mi
+
+              volumeMounts:
+                - name: logs
+                  mountPath: /logs
+                  readOnly: true
+                - name: state
+                  mountPath: /state
+
+          volumes:
+            - name: logs
+              persistentVolumeClaim:
+                claimName: legacy-app-logs
+                readOnly: true
+            - name: state
+              persistentVolumeClaim:
+                claimName: log-analyzer-state
