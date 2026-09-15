@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 300" role="img" aria-label="Comparison: the original design exposes one EC2 instance to the entire internet and loses in-flight data when it dies, while the redesign places a replayable Kinesis buffer in front of a multi-AZ fleet with no inbound ports.">
+  <style>
+    :root {
+      --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+      --ground: #F2F5F8; --surface: #FFFFFF; --surface-2: #E9EEF3;
+      --ink: #101E2B; --ink-soft: #536676; --ink-faint: #8093A3;
+      --rule: #D5DFE7; --rule-strong: #B6C5D1;
+      --accent: #1C5C87; --accent-wash: #E3EDF4;
+      --flag: #A8412A; --flag-wash: #F6E7E2;
+      --ok: #106A5E; --ok-wash: #DFEEEB;
+    }
+    .dg-surface { fill: var(--surface); stroke: var(--rule-strong); stroke-width: 1.2; }
+    .dg-zone { fill: var(--surface-2); stroke: var(--rule); stroke-width: 1.2; stroke-dasharray: 5 4; }
+    .dg-accent { fill: var(--accent-wash); stroke: var(--accent); stroke-width: 1.4; }
+    .dg-flagbox { fill: var(--flag-wash); stroke: var(--flag); stroke-width: 1.4; }
+    .dg-okbox { fill: var(--ok-wash); stroke: var(--ok); stroke-width: 1.4; }
+    .dg-t { fill: var(--ink); font-family: var(--sans); font-size: 13px; font-weight: 600; }
+    .dg-s { fill: var(--ink-soft); font-family: var(--mono); font-size: 10.5px; }
+    .dg-band { fill: var(--ink-faint); font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .14em; }
+    .dg-edge { stroke: var(--ink-faint); stroke-width: 1.4; fill: none; }
+    .dg-edge-flag { stroke: var(--flag); stroke-width: 1.8; fill: none; }
+    .dg-edge-ok { stroke: var(--ok); stroke-width: 1.8; fill: none; }
+    .dg-edge-dash { stroke: var(--accent); stroke-width: 1.4; fill: none; stroke-dasharray: 6 4; }
+    .dg-head { fill: var(--ink-faint); }
+    .dg-head-flag { fill: var(--flag); }
+    .dg-head-ok { fill: var(--ok); }
+    .dg-head-acc { fill: var(--accent); }
+    .dg-el { fill: var(--ink-soft); font-family: var(--mono); font-size: 10px; }
+  </style>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="7" orient="auto">
+      <polygon points="0,0 10,4 0,8" class="dg-head"/>
+    </marker>
+    <marker id="arf" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="7" orient="auto">
+      <polygon points="0,0 10,4 0,8" class="dg-head-flag"/>
+    </marker>
+    <marker id="aro" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="7" orient="auto">
+      <polygon points="0,0 10,4 0,8" class="dg-head-ok"/>
+    </marker>
+    <marker id="ara" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="7" orient="auto">
+      <polygon points="0,0 10,4 0,8" class="dg-head-acc"/>
+    </marker>
+  </defs>
+
+  <!-- BEFORE -->
+  <text x="16" y="24" class="dg-band">BEFORE</text>
+  <rect x="16" y="38" width="420" height="248" rx="5" class="dg-zone"/>
+  <rect x="40" y="76" width="112" height="46" rx="4" class="dg-surface"/>
+  <text x="96" y="97" class="dg-t" text-anchor="middle">Internet</text>
+  <text x="96" y="112" class="dg-s" text-anchor="middle">0.0.0.0/0</text>
+  <line x1="152" y1="99" x2="236" y2="99" class="dg-edge-flag" marker-end="url(#arf)"/>
+  <text x="194" y="90" class="dg-el" text-anchor="middle" style="fill:var(--flag)">all ports</text>
+  <rect x="240" y="66" width="164" height="66" rx="4" class="dg-flagbox"/>
+  <text x="322" y="90" class="dg-t" text-anchor="middle">t2.micro</text>
+  <text x="322" y="106" class="dg-s" text-anchor="middle">single AZ</text>
+  <text x="322" y="121" class="dg-s" text-anchor="middle">no IAM role</text>
+  <line x1="322" y1="132" x2="322" y2="182" class="dg-edge" marker-end="url(#ar)"/>
+  <text x="332" y="161" class="dg-el">writes</text>
+  <rect x="240" y="186" width="164" height="50" rx="4" class="dg-surface"/>
+  <text x="322" y="207" class="dg-t" text-anchor="middle">Local disk</text>
+  <text x="322" y="223" class="dg-s" text-anchor="middle">ephemeral</text>
+  <text x="40" y="207" class="dg-s" style="fill:var(--flag)">instance dies</text>
+  <text x="40" y="222" class="dg-s" style="fill:var(--flag)">&#8594; data gone,</text>
+  <text x="40" y="237" class="dg-s" style="fill:var(--flag)">no replay</text>
+  <text x="28" y="270" class="dg-s" style="fill:var(--flag)">no egress rule &#8594; cannot ship logs anywhere</text>
+
+  <!-- divider -->
+  <line x1="470" y1="38" x2="470" y2="286" stroke="var(--rule)" stroke-width="1" stroke-dasharray="3 4"/>
+
+  <!-- AFTER -->
+  <text x="504" y="24" class="dg-band">AFTER</text>
+  <rect x="504" y="38" width="460" height="248" rx="5" class="dg-zone"/>
+  <rect x="522" y="76" width="96" height="46" rx="4" class="dg-surface"/>
+  <text x="570" y="97" class="dg-t" text-anchor="middle">Producers</text>
+  <text x="570" y="112" class="dg-s" text-anchor="middle">in-VPC</text>
+  <line x1="618" y1="99" x2="664" y2="99" class="dg-edge-ok" marker-end="url(#aro)"/>
+  <rect x="668" y="66" width="106" height="66" rx="4" class="dg-okbox"/>
+  <text x="721" y="90" class="dg-t" text-anchor="middle">Kinesis</text>
+  <text x="721" y="106" class="dg-s" text-anchor="middle">7-day</text>
+  <text x="721" y="121" class="dg-s" text-anchor="middle">replay</text>
+  <line x1="774" y1="99" x2="820" y2="99" class="dg-edge-ok" marker-end="url(#aro)"/>
+  <rect x="824" y="66" width="122" height="66" rx="4" class="dg-accent"/>
+  <text x="885" y="90" class="dg-t" text-anchor="middle">ASG fleet</text>
+  <text x="885" y="106" class="dg-s" text-anchor="middle">3 AZ · Spot</text>
+  <text x="885" y="121" class="dg-s" text-anchor="middle">no ingress</text>
+  <path d="M 700 132 L 700 162 L 845 162 L 845 138" class="dg-edge-dash" marker-end="url(#ara)"/>
+  <text x="772" y="180" class="dg-el" text-anchor="middle" style="fill:var(--accent)">replay: reset checkpoint, re-read</text>
+  <line x1="920" y1="132" x2="920" y2="182" class="dg-edge" marker-end="url(#ar)"/>
+  <text x="930" y="161" class="dg-el">Firehose</text>
+  <rect x="800" y="186" width="146" height="50" rx="4" class="dg-surface"/>
+  <text x="873" y="207" class="dg-t" text-anchor="middle">S3 · Parquet</text>
+  <text x="873" y="223" class="dg-s" text-anchor="middle">KMS · versioned</text>
+  <text x="516" y="270" class="dg-s" style="fill:var(--ok)">worker loss = one lease handover, not data loss</text>
+</svg>

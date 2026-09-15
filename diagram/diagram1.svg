@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" role="img" aria-label="Orbit platform architecture: edge tier of Route 53, CloudFront, WAF and ALB feeding six services on EKS across three availability zones, backed by Aurora, DynamoDB, Redis, OpenSearch and S3, with a dashed line marking the boundary below which all processing is asynchronous via an outbox, EventBridge and SQS queues.">
+  <style>
+    :root {
+      --sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+      --ground: #F2F5F8; --surface: #FFFFFF; --surface-2: #E9EEF3;
+      --ink: #101E2B; --ink-soft: #536676; --ink-faint: #8093A3;
+      --rule: #D5DFE7; --rule-strong: #B6C5D1;
+      --accent: #1C5C87; --accent-wash: #E3EDF4;
+      --flag: #A8412A; --flag-wash: #F6E7E2;
+      --ok: #106A5E; --ok-wash: #DFEEEB;
+    }
+    .dg-surface { fill: var(--surface); stroke: var(--rule-strong); stroke-width: 1.2; }
+    .dg-zone { fill: var(--surface-2); stroke: var(--rule); stroke-width: 1.2; stroke-dasharray: 5 4; }
+    .dg-accent { fill: var(--accent-wash); stroke: var(--accent); stroke-width: 1.4; }
+    .dg-flagbox { fill: var(--flag-wash); stroke: var(--flag); stroke-width: 1.4; }
+    .dg-okbox { fill: var(--ok-wash); stroke: var(--ok); stroke-width: 1.4; }
+    .dg-t { fill: var(--ink); font-family: var(--sans); font-size: 13px; font-weight: 600; }
+    .dg-s { fill: var(--ink-soft); font-family: var(--mono); font-size: 10.5px; }
+    .dg-band { fill: var(--ink-faint); font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .14em; }
+    .dg-edge { stroke: var(--ink-faint); stroke-width: 1.4; fill: none; }
+    .dg-edge-flag { stroke: var(--flag); stroke-width: 1.8; fill: none; }
+    .dg-edge-ok { stroke: var(--ok); stroke-width: 1.8; fill: none; }
+    .dg-head { fill: var(--ink-faint); }
+    .dg-head-ok { fill: var(--ok); }
+    .dg-badge { fill: var(--accent); }
+    .dg-badge-t { fill: var(--surface); font-family: var(--mono); font-size: 10px; font-weight: 600; }
+    .dg-el { fill: var(--ink-soft); font-family: var(--mono); font-size: 10px; }
+  </style>
+  <defs>
+    <marker id="a2" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="7" orient="auto">
+      <polygon points="0,0 10,4 0,8" class="dg-head"/>
+    </marker>
+    <marker id="a2o" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="7" orient="auto">
+      <polygon points="0,0 10,4 0,8" class="dg-head-ok"/>
+    </marker>
+  </defs>
+
+  <!-- ===== EDGE ===== -->
+  <text x="14" y="32" class="dg-band">EDGE</text>
+  <rect x="14" y="46" width="146" height="46" rx="4" class="dg-surface"/>
+  <text x="87" y="66" class="dg-t" text-anchor="middle">Route 53</text>
+  <text x="87" y="81" class="dg-s" text-anchor="middle">latency routing</text>
+  <line x1="160" y1="69" x2="204" y2="69" class="dg-edge" marker-end="url(#a2)"/>
+
+  <rect x="208" y="46" width="146" height="46" rx="4" class="dg-surface"/>
+  <text x="281" y="66" class="dg-t" text-anchor="middle">CloudFront</text>
+  <text x="281" y="81" class="dg-s" text-anchor="middle">static + edge cache</text>
+  <line x1="354" y1="69" x2="398" y2="69" class="dg-edge" marker-end="url(#a2)"/>
+
+  <rect x="402" y="46" width="130" height="46" rx="4" class="dg-surface"/>
+  <text x="467" y="66" class="dg-t" text-anchor="middle">WAF</text>
+  <text x="467" y="81" class="dg-s" text-anchor="middle">rules + rate limit</text>
+  <line x1="532" y1="69" x2="576" y2="69" class="dg-edge" marker-end="url(#a2)"/>
+
+  <rect x="580" y="46" width="146" height="46" rx="4" class="dg-accent"/>
+  <text x="653" y="66" class="dg-t" text-anchor="middle">ALB</text>
+  <text x="653" y="81" class="dg-s" text-anchor="middle">TLS · 3 AZ</text>
+
+  <rect x="810" y="46" width="176" height="46" rx="4" class="dg-surface"/>
+  <text x="898" y="66" class="dg-t" text-anchor="middle">External PSP</text>
+  <text x="898" y="81" class="dg-s" text-anchor="middle">card authorisation</text>
+
+  <circle cx="184" cy="55" r="9" class="dg-badge"/>
+  <text x="184" y="59" class="dg-badge-t" text-anchor="middle">1</text>
+  <circle cx="556" cy="55" r="9" class="dg-badge"/>
+  <text x="556" y="59" class="dg-badge-t" text-anchor="middle">2</text>
+
+  <path d="M 600 92 L 600 112 L 101 112 L 101 168" class="dg-edge" marker-end="url(#a2)"/>
+  <path d="M 413 172 L 413 128 L 898 128 L 898 96" class="dg-edge" marker-end="url(#a2)"/>
+  <text x="655" y="122" class="dg-el">authorise (synchronous)</text>
+
+  <!-- ===== SERVICES ===== -->
+  <text x="14" y="132" class="dg-band">SERVICES</text>
+  <rect x="14" y="140" width="972" height="128" rx="5" class="dg-zone"/>
+  <text x="972" y="162" class="dg-s" text-anchor="end">EKS · 3 AZ · mesh mTLS, retries, circuit breaking</text>
+
+  <rect x="30" y="172" width="142" height="56" rx="4" class="dg-accent"/>
+  <text x="101" y="195" class="dg-t" text-anchor="middle">BFF</text>
+  <text x="101" y="211" class="dg-s" text-anchor="middle">API gateway</text>
+
+  <rect x="186" y="172" width="142" height="56" rx="4" class="dg-accent"/>
+  <text x="257" y="195" class="dg-t" text-anchor="middle">Order</text>
+  <text x="257" y="211" class="dg-s" text-anchor="middle">+ outbox</text>
+
+  <rect x="342" y="172" width="142" height="56" rx="4" class="dg-surface"/>
+  <text x="413" y="195" class="dg-t" text-anchor="middle">Payment</text>
+  <text x="413" y="211" class="dg-s" text-anchor="middle">authorise</text>
+
+  <rect x="498" y="172" width="142" height="56" rx="4" class="dg-surface"/>
+  <text x="569" y="195" class="dg-t" text-anchor="middle">Inventory</text>
+  <text x="569" y="211" class="dg-s" text-anchor="middle">reservations</text>
+
+  <rect x="654" y="172" width="142" height="56" rx="4" class="dg-surface"/>
+  <text x="725" y="195" class="dg-t" text-anchor="middle">Search</text>
+  <text x="725" y="211" class="dg-s" text-anchor="middle">read model</text>
+
+  <rect x="810" y="172" width="142" height="56" rx="4" class="dg-surface"/>
+  <text x="881" y="195" class="dg-t" text-anchor="middle">Notification</text>
+  <text x="881" y="211" class="dg-s" text-anchor="middle">email · push</text>
+
+  <line x1="172" y1="200" x2="182" y2="200" class="dg-edge" marker-end="url(#a2)"/>
+  <line x1="328" y1="200" x2="338" y2="200" class="dg-edge" marker-end="url(#a2)"/>
+  <line x1="484" y1="200" x2="494" y2="200" class="dg-edge" marker-end="url(#a2)"/>
+
+  <circle cx="177" cy="159" r="9" class="dg-badge"/>
+  <text x="177" y="163" class="dg-badge-t" text-anchor="middle">3</text>
+  <circle cx="333" cy="159" r="9" class="dg-badge"/>
+  <text x="333" y="163" class="dg-badge-t" text-anchor="middle">5</text>
+  <circle cx="489" cy="159" r="9" class="dg-badge"/>
+  <text x="489" y="163" class="dg-badge-t" text-anchor="middle">6</text>
+
+  <!-- ===== DATA ===== -->
+  <text x="14" y="302" class="dg-band">DATA</text>
+  <path d="M 257 228 L 257 284 L 108 284 L 108 312" class="dg-edge" marker-end="url(#a2)"/>
+  <text x="266" y="280" class="dg-el">write + outbox, one transaction</text>
+  <circle cx="257" cy="252" r="9" class="dg-badge"/>
+  <text x="257" y="256" class="dg-badge-t" text-anchor="middle">4</text>
+  <path d="M 569 228 L 569 292 L 504 292 L 504 312" class="dg-edge" marker-end="url(#a2)"/>
+  <path d="M 725 228 L 725 300 L 702 300 L 702 312" class="dg-edge" marker-end="url(#a2)"/>
+
+  <rect x="14" y="316" width="188" height="62" rx="4" class="dg-accent"/>
+  <text x="108" y="339" class="dg-t" text-anchor="middle">Aurora PostgreSQL</text>
+  <text x="108" y="355" class="dg-s" text-anchor="middle">writer + 2 readers</text>
+  <text x="108" y="369" class="dg-s" text-anchor="middle">via RDS Proxy</text>
+
+  <rect x="212" y="316" width="188" height="62" rx="4" class="dg-surface"/>
+  <text x="306" y="339" class="dg-t" text-anchor="middle">DynamoDB</text>
+  <text x="306" y="355" class="dg-s" text-anchor="middle">carts · sessions</text>
+  <text x="306" y="369" class="dg-s" text-anchor="middle">idempotency keys</text>
+
+  <rect x="410" y="316" width="188" height="62" rx="4" class="dg-surface"/>
+  <text x="504" y="339" class="dg-t" text-anchor="middle">ElastiCache Redis</text>
+  <text x="504" y="355" class="dg-s" text-anchor="middle">read-through cache</text>
+  <text x="504" y="369" class="dg-s" text-anchor="middle">inventory holds</text>
+
+  <rect x="608" y="316" width="188" height="62" rx="4" class="dg-surface"/>
+  <text x="702" y="339" class="dg-t" text-anchor="middle">OpenSearch</text>
+  <text x="702" y="355" class="dg-s" text-anchor="middle">product search</text>
+  <text x="702" y="369" class="dg-s" text-anchor="middle">eventually consistent</text>
+
+  <rect x="806" y="316" width="180" height="62" rx="4" class="dg-surface"/>
+  <text x="896" y="339" class="dg-t" text-anchor="middle">S3</text>
+  <text x="896" y="355" class="dg-s" text-anchor="middle">assets · exports</text>
+  <text x="896" y="369" class="dg-s" text-anchor="middle">log lake (Part 1)</text>
+
+  <!-- ===== SYNC / ASYNC BOUNDARY ===== -->
+  <line x1="14" y1="416" x2="986" y2="416" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="8 5"/>
+  <rect x="330" y="404" width="340" height="24" rx="12" class="dg-accent"/>
+  <text x="500" y="420" class="dg-s" text-anchor="middle" style="fill:var(--accent);font-weight:600">everything below here is asynchronous</text>
+
+  <!-- ===== EVENTS ===== -->
+  <text x="14" y="462" class="dg-band">EVENTS</text>
+  <line x1="108" y1="378" x2="108" y2="470" class="dg-edge-ok" marker-end="url(#a2o)"/>
+  <circle cx="108" cy="448" r="9" class="dg-badge"/>
+  <text x="108" y="452" class="dg-badge-t" text-anchor="middle">7</text>
+
+  <rect x="14" y="474" width="196" height="56" rx="4" class="dg-okbox"/>
+  <text x="112" y="497" class="dg-t" text-anchor="middle">Outbox relay</text>
+  <text x="112" y="513" class="dg-s" text-anchor="middle">polls, publishes</text>
+  <line x1="210" y1="502" x2="254" y2="502" class="dg-edge-ok" marker-end="url(#a2o)"/>
+
+  <rect x="258" y="474" width="196" height="56" rx="4" class="dg-okbox"/>
+  <text x="356" y="497" class="dg-t" text-anchor="middle">EventBridge</text>
+  <text x="356" y="513" class="dg-s" text-anchor="middle">rules · fan-out</text>
+  <line x1="454" y1="502" x2="498" y2="502" class="dg-edge-ok" marker-end="url(#a2o)"/>
+  <circle cx="476" cy="480" r="9" class="dg-badge"/>
+  <text x="476" y="484" class="dg-badge-t" text-anchor="middle">8</text>
+
+  <rect x="502" y="474" width="196" height="56" rx="4" class="dg-surface"/>
+  <text x="600" y="497" class="dg-t" text-anchor="middle">SQS per consumer</text>
+  <text x="600" y="513" class="dg-s" text-anchor="middle">each with a DLQ</text>
+  <line x1="698" y1="502" x2="742" y2="502" class="dg-edge" marker-end="url(#a2)"/>
+
+  <rect x="746" y="474" width="240" height="56" rx="4" class="dg-surface"/>
+  <text x="866" y="497" class="dg-t" text-anchor="middle">Consumers</text>
+  <text x="866" y="513" class="dg-s" text-anchor="middle">fulfilment · email · reindex</text>
+
+  <!-- ===== PLATFORM ===== -->
+  <text x="14" y="566" class="dg-band">PLATFORM</text>
+  <rect x="14" y="578" width="478" height="94" rx="5" class="dg-zone"/>
+  <text x="34" y="604" class="dg-t">Delivery</text>
+  <text x="34" y="626" class="dg-s">GitHub Actions &#8594; ECR &#8594; Argo CD (GitOps)</text>
+  <text x="34" y="644" class="dg-s">&#8594; Argo Rollouts canary, automated analysis</text>
+  <text x="34" y="662" class="dg-s">&#8594; rollback on error rate or DB CPU</text>
+
+  <rect x="508" y="578" width="478" height="94" rx="5" class="dg-zone"/>
+  <text x="528" y="604" class="dg-t">Observability</text>
+  <text x="528" y="626" class="dg-s">OpenTelemetry collector &#8594; Prometheus / Grafana</text>
+  <text x="528" y="644" class="dg-s">distributed traces across the checkout path</text>
+  <text x="528" y="662" class="dg-s">application logs &#8594; the Part 1 pipeline</text>
+</svg>
