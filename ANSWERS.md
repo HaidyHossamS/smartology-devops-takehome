@@ -216,6 +216,8 @@ requirement.
 The rewritten pipeline is **pull-based**: producers write to a Kinesis stream,
 and the processor fleet consumes from it.
 
+![Log Aggregator Redesign Before and After](diagram/diagram2.svg)
+
 ```
 producers ──▶ Kinesis Data Stream ──▶ processor fleet ──▶ Firehose ──▶ S3 (Parquet)
               (7-day replay)          (ASG, 3 AZ, Spot)              │
@@ -934,8 +936,7 @@ seem acceptable for a change of this kind."
 
 # Part 4 — System Architecture Diagram
 
-Diagram: [`diagram/orbit-architecture.html`](diagram/orbit-architecture.html)
-(also published as an interactive page).
+![Orbit System Architecture](diagram/diagram1.svg)
 
 **Orbit** is a multi-region e-commerce order and fulfilment platform on AWS:
 event-driven microservices on EKS, polyglot persistence, GitOps delivery with
